@@ -113,9 +113,9 @@ def test_gemini_api_mode_requires_an_api_key(monkeypatch) -> None:
 def test_gemini_api_mode_builds_documented_model_without_network(monkeypatch) -> None:
     monkeypatch.setenv("GEMINI_API_KEY", "test-placeholder")
 
-    agent = create_agent(mode="gemini-api", model_name="gemma-4-31b-it")
+    agent = create_agent(mode="gemini-api", model_name="gemini-3.5-flash-lite")
 
-    assert agent.model.model == "gemma-4-31b-it"
+    assert agent.model.model == "gemini-3.5-flash-lite"
 
 
 def test_commit_linter_cli_accepts_and_rejects_headers(capsys) -> None:

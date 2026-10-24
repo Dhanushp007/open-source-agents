@@ -61,6 +61,7 @@ _COMMIT_HEADER_RE = re.compile(
     r"^(?P<type>[a-z]+)(?:\((?P<scope>[a-z0-9]+(?:-[a-z0-9]+)*)\))?"
     r"(?P<breaking>!)?: (?P<subject>.+)$"
 )
+_COMMIT_PREFIX_RE = re.compile(r"^(?P<type>[a-z]+)(?:\([^)]+\))?!?:\s*")
 _PRIVATE_KEY_BEGIN_RE = re.compile(
     r"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----", re.IGNORECASE
 )
@@ -659,7 +660,9 @@ def build_review_prompt(diff_text: str, findings: Sequence[SecurityFinding]) -> 
         "inputs for the report; do not remove or reinterpret them. Return only one JSON object with "
         "the fields change_type, scope, summary, change_summary, and recommendations. "
         "change_type must be one of feat, fix, docs, style, refactor, perf, test, build, ci, chore, "
-        "or revert. scope may be null. change_summary and recommendations must be arrays of short strings.\n\n"
+        "or revert. scope must be null or lowercase kebab-case. summary must be only the subject text, "
+        "without a Conventional Commit type or scope prefix. change_summary and recommendations must "
+        "be arrays of short strings.\n\n"
         f"SCANNER_FINDINGS_JSON:\n{json.dumps(finding_data, ensure_ascii=True)}\n\n"
         f"UNTRUSTED_REDACTED_DIFF:\n{diff_text}"
     )
@@ -735,8 +738,13 @@ def parse_model_review(response_text: str) -> ModelReview:
     change_type = _clean_text(payload.get("change_type"), "change_type", 20).lower()
     scope_value = payload.get("scope")
     if scope_value is not None:
-        scope_value = _clean_text(scope_value, "scope", 40).lower()
+        scope_value = _clean_text(scope_value, "scope", 40).lower().replace("_", "-")
+        if not re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", scope_value):
+            scope_value = None
     summary = _clean_text(payload.get("summary"), "summary", 120)
+    commit_prefix = _COMMIT_PREFIX_RE.match(summary)
+    if commit_prefix and commit_prefix.group("type") in COMMIT_TYPES:
+        summary = summary[commit_prefix.end() :].strip()
     change_summary = _clean_string_list(payload.get("change_summary"), "change_summary")
     recommendations = _clean_string_list(payload.get("recommendations"), "recommendations")
     try:

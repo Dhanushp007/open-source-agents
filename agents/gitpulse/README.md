@@ -13,7 +13,7 @@
 ### Key Features
 - Scans added diff lines for a small set of heuristic credential and risky-call patterns; values are redacted from findings.
 - Optionally uses Gitleaks' Git scanner for commit ranges or stdin scanner for worktree/diff input; possible secrets block model submission by default.
-- Uses Google ADK with local Gemma 3 through Ollama or optional Gemma 4 through the Gemini API for a semantic summary and Conventional Commit suggestion.
+- Uses Google ADK with local Gemma 3 through Ollama or optional Gemini 3.5 Flash-Lite through the Gemini API for a semantic summary and Conventional Commit suggestion.
 - Runs Ruff on changed Python files and provides a separate Conventional Commit header linter.
 - Provides offline mode, model-independent tests, and a local Markdown review draft. It never posts to GitHub or modifies source files.
 
@@ -23,7 +23,7 @@
 
 - **Language & Runtime**: Python 3.10+
 - **Agent Framework / Core Library**: Google Agent Development Kit (ADK) Python 2.13.0
-- **Models**: Gemma 3 4B through local Ollama, or optional Gemma 4 `gemma-4-31b-it` through the Gemini API; offline mode does not load a model
+- **Models**: Gemma 3 4B through local Ollama, or optional Gemini 3.5 Flash-Lite `gemini-3.5-flash-lite` through the Gemini API; offline mode does not load a model
 - **External APIs / Tools**: Local Git executable, Ruff, optional Gitleaks CLI, optional local Ollama service, and optional Gemini API. PR heads are fetched through Git refs; no GitHub API or MCP server is used.
 
 ---
@@ -46,7 +46,7 @@ flowchart TD
     REDACT --> MODE
     MODE -->|offline| REPORT
     MODE -->|Ollama| ADK["ADK + local Gemma 3"]
-    MODE -->|Gemini API| API["ADK + Gemma 4 API"]
+    MODE -->|Gemini API| API["ADK + Gemini 3.5 Flash-Lite"]
     ADK --> VALIDATE["Validate model response"]
     API --> VALIDATE
     VALIDATE --> REPORT
@@ -60,7 +60,7 @@ flowchart TD
 
 Required: Python 3.10+, Git, and the fork's `upstream` remote. Ruff is installed with the Python requirements. GitPulse has been tested on Windows with Python 3.14.3; the macOS/Linux setup commands are documented but have not been verified here.
 
-Optional: Install the standalone Gitleaks CLI v8.30.1 from its [official releases](https://github.com/gitleaks/gitleaks/releases) for dedicated secret scanning; it is not a Python package. The integration tests mock the CLI, and a live Gitleaks run has not been verified in this environment. Install Ollama and `gemma3:4b` for local AI review. Gemini API review needs a Google AI Studio API key, sends the redacted diff to Google's API, and may consume quota or incur charges; check current account pricing and limits before use.
+Optional: Install the standalone Gitleaks CLI v8.30.1 from its [official releases](https://github.com/gitleaks/gitleaks/releases) for dedicated secret scanning; it is not a Python package. Its real binary was smoke-tested on temporary diffs and a temporary Git repository. Install Ollama and `gemma3:4b` for local AI review. Gemini API review needs a Google AI Studio API key, sends the redacted diff to Google's API, and may consume quota or incur charges; check current account pricing and limits before use.
 
 ---
 
@@ -71,13 +71,12 @@ Create a virtual environment and install the project dependencies:
 ```powershell
 cd agents/gitpulse
 py -3 -m venv .venv
-.\.venv\Scripts\Activate.ps1
-python -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
 ```
 
-On macOS/Linux, use `python3 -m venv .venv` and `source .venv/bin/activate` instead.
+On macOS/Linux, use `python3 -m venv .venv` and `./.venv/bin/python -m pip install -r requirements.txt` instead.
 
-No `.env` file is needed for offline mode or local Ollama defaults. To use Gemini API mode, copy `.env.example` to `.env` and set `GEMINI_API_KEY`; never commit `.env`. To use Gitleaks, install its standalone executable and ensure `gitleaks version` works in the same terminal.
+No `.env` file is needed for offline mode or local Ollama defaults. To use Gemini API mode, copy `.env.example` to `.env`, set `GEMINI_API_KEY`, and keep `GITPULSE_API_MODEL=gemini-3.5-flash-lite`; never commit `.env`. To use Gitleaks, install its standalone executable and ensure `gitleaks version` works in the same terminal.
 
 ---
 
@@ -87,7 +86,7 @@ No `.env` file is needed for offline mode or local Ollama defaults. To use Gemin
 | :--- | :--- | :--- | :--- |
 | `GITPULSE_MODEL` | No | `gemma3:4b` | Local Ollama Gemma 3 model tag used in `ollama` mode |
 | `OLLAMA_API_BASE` | No | `http://localhost:11434` | Ollama endpoint. Use a remote endpoint only if you intend to send diffs there. |
-| `GITPULSE_API_MODEL` | No | `gemma-4-31b-it` | Gemma 4 model ID used in `gemini-api` mode |
+| `GITPULSE_API_MODEL` | No | `gemini-3.5-flash-lite` | Gemini API model ID used in `gemini-api` mode |
 | `GEMINI_API_KEY` | Only for `gemini-api` | *None* | Google AI Studio key. Keep it in ignored `.env` or the process environment. |
 
 ---
@@ -97,8 +96,10 @@ No `.env` file is needed for offline mode or local Ollama defaults. To use Gemin
 After [Installation & Setup](#installation--setup), run this from `agents/gitpulse/` to review your current branch against the original repository's `main`. It runs offline by default, so no model, API key, or Gitleaks installation is needed:
 
 ```powershell
-python cli.py review --base upstream/main
+.\.venv\Scripts\python.exe cli.py review --base upstream/main
 ```
+
+On macOS/Linux, use `./.venv/bin/python cli.py review --base upstream/main`.
 
 GitPulse writes `PULL_REQUEST_REVIEW.md` in this directory. The file is ignored by Git. Read it for the suggested commit, scanner findings, Ruff results, and any model summary.
 
@@ -158,10 +159,12 @@ This sample was produced by a local Gemma 3 4B smoke run; model wording can vary
 From the repository root, run the automated suite. It uses fixture diffs and mocked responses, so it does not call Ollama or the Gemini API:
 
 ```powershell
-python -m pytest agents/gitpulse/tests -q
+agents\gitpulse\.venv\Scripts\python.exe -m pytest agents/gitpulse/tests -q
 ```
 
-For a separate live-model smoke test, run the bundled sample diff with `--mode ollama` or `--mode gemini-api`. To test Gitleaks, install the CLI and run a ref review with `--secret-scanner gitleaks`. A judge can run automated tests without either model or Gitleaks. Reproducing Gitleaks findings requires its standalone executable; reproducing live semantic output requires Ollama with Gemma 3 or a valid Gemini API key and network access. The Gemini API configuration is covered by tests; live smoke attempts in this environment returned Google `500 INTERNAL`, so successful API inference remains unverified.
+On macOS/Linux, use `agents/gitpulse/.venv/bin/python -m pytest agents/gitpulse/tests -q`.
+
+For a separate live-model smoke test, run the bundled sample diff with `--mode ollama` or `--mode gemini-api`. Gemini 3.5 Flash-Lite completed a smoke review on the bundled harmless diff. Gitleaks v8.30.1 detected a synthetic test key, redacted it from the report, and correctly blocked model submission. Automated tests do not require either model or Gitleaks.
 
 ---
 

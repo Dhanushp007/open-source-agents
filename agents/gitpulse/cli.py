@@ -118,7 +118,7 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     review_parser.add_argument(
         "--model",
-        help="Ollama or Gemma 4 API model ID; defaults to the matching GITPULSE_*_MODEL setting",
+        help="Ollama or Gemini API model ID; defaults to the matching GITPULSE_*_MODEL setting",
     )
     review_parser.add_argument(
         "--output",

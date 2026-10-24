@@ -67,6 +67,26 @@ def test_parse_model_review_accepts_json_fence_and_rejects_invalid_data() -> Non
         parse_model_review("Here is the JSON: {}")
 
 
+def test_parse_model_review_normalizes_scope_and_commit_prefixed_summary() -> None:
+    response = json.dumps(
+        {
+            "change_type": "feat",
+            "scope": "text_utils",
+            "summary": "feat(text_utils): add normalize_project_name helper",
+            "change_summary": ["Adds a project-name normalizer."],
+            "recommendations": [],
+        }
+    )
+
+    review = parse_model_review(response)
+
+    assert review.scope == "text-utils"
+    assert review.summary == "add normalize_project_name helper"
+    assert format_conventional_commit(review.change_type, review.scope, review.summary) == (
+        "feat(text-utils): add normalize_project_name helper"
+    )
+
+
 def test_report_keeps_scanner_findings_when_model_is_skipped() -> None:
     finding = SecurityFinding(
         category="hardcoded-credential",

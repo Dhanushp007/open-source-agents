@@ -18,7 +18,7 @@ load_dotenv(Path(__file__).with_name(".env"))
 APP_NAME = "gitpulse"
 USER_ID = "local-reviewer"
 DEFAULT_MODEL_NAME = os.getenv("GITPULSE_MODEL", "gemma3:4b")
-DEFAULT_API_MODEL_NAME = os.getenv("GITPULSE_API_MODEL", "gemma-4-31b-it")
+DEFAULT_API_MODEL_NAME = os.getenv("GITPULSE_API_MODEL", "gemini-3.5-flash-lite")
 
 AGENT_INSTRUCTION = """
 You are GitPulse, a local pull-request review assistant. The user message includes a
@@ -28,9 +28,11 @@ secure. Do not invent files, behavior, or findings. Return only one JSON object
 with these fields: change_type, scope, summary, change_summary, recommendations.
 Use a Conventional Commit type from feat, fix, docs, style, refactor, perf, test,
 build, ci, chore, or revert. Use null for scope when no concise scope fits.
-Keep the summary on one line, and use short arrays of factual strings for the
-change summary and recommendations. Do not include scanner findings in your JSON;
-the application adds those independently.
+Otherwise use a lowercase kebab-case scope. Keep summary to the subject only:
+do not put the Conventional Commit type or scope prefix in it. Keep summary on
+one line, and use short arrays of factual strings for change_summary and
+recommendations. Do not include scanner findings in your JSON; the application
+adds those independently.
 """.strip()
 
 
@@ -45,10 +47,10 @@ def create_agent(
         model = Gemma3Ollama(model=f"ollama/{selected_model}")
     elif mode == "gemini-api":
         if not os.getenv("GEMINI_API_KEY", "").strip():
-            raise ValueError("Set GEMINI_API_KEY to use the Gemma 4 API mode.")
+            raise ValueError("Set GEMINI_API_KEY to use the Gemini API mode.")
         selected_model = (model_name or DEFAULT_API_MODEL_NAME).strip()
-        if not selected_model.startswith("gemma-4-"):
-            raise ValueError("GitPulse's API mode currently supports Gemma 4 model IDs only.")
+        if not selected_model.startswith("gemini-"):
+            raise ValueError("GitPulse's API mode requires a Gemini API model ID.")
         model = Gemini(model=selected_model)
     else:
         raise ValueError(f"Unsupported model mode: {mode!r}.")
