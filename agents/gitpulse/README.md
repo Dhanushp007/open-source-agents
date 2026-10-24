@@ -7,10 +7,12 @@
 ## Overview
 
 ### Problem Statement & Intended Users
+
 - **Problem**: Reviewing changes requires understanding intent, checking for risky additions, and producing a concise summary.
 - **Intended Users**: Contributors and maintainers reviewing local branches, commits, and GitHub pull requests.
 
 ### Key Features
+
 - Scans added diff lines for a small set of heuristic credential and risky-call patterns; values are redacted from findings.
 - Optionally uses Gitleaks' Git scanner for commit ranges or stdin scanner for worktree/diff input; possible secrets block model submission by default.
 - Uses Google ADK with local Gemma 3 through Ollama or optional Gemini 3.5 Flash-Lite through the Gemini API for a semantic summary and Conventional Commit suggestion.
@@ -82,18 +84,18 @@ No `.env` file is needed for offline mode or local Ollama defaults. To use Gemin
 
 ## Configuration & Environment Variables
 
-| Variable Name | Required | Default | Description |
-| :--- | :--- | :--- | :--- |
-| `GITPULSE_MODEL` | No | `gemma3:4b` | Local Ollama Gemma 3 model tag used in `ollama` mode |
-| `OLLAMA_API_BASE` | No | `http://localhost:11434` | Ollama endpoint. Use a remote endpoint only if you intend to send diffs there. |
-| `GITPULSE_API_MODEL` | No | `gemini-3.5-flash-lite` | Gemini API model ID used in `gemini-api` mode |
-| `GEMINI_API_KEY` | Only for `gemini-api` | *None* | Google AI Studio key. Keep it in ignored `.env` or the process environment. |
+| Variable Name          | Required                | Default                    | Description                                                                    |
+| :--------------------- | :---------------------- | :------------------------- | :----------------------------------------------------------------------------- |
+| `GITPULSE_MODEL`     | No                      | `gemma3:4b`              | Local Ollama Gemma 3 model tag used in `ollama` mode                         |
+| `OLLAMA_API_BASE`    | No                      | `http://localhost:11434` | Ollama endpoint. Use a remote endpoint only if you intend to send diffs there. |
+| `GITPULSE_API_MODEL` | No                      | `gemini-3.5-flash-lite`  | Gemini API model ID used in `gemini-api` mode                                |
+| `GEMINI_API_KEY`     | Only for `gemini-api` | *None*                   | Google AI Studio key. Keep it in ignored `.env` or the process environment.  |
 
 ---
 
 ## How to Run
 
-After [Installation & Setup](#installation--setup), run this from `agents/gitpulse/` to review your current branch against the original repository's `main`. It runs offline by default, so no model, API key, or Gitleaks installation is needed:
+After [Installation &amp; Setup](#installation--setup), run this from `agents/gitpulse/` to review your current branch against the original repository's `main`. It runs offline by default, so no model, API key, or Gitleaks installation is needed:
 
 ```powershell
 .\.venv\Scripts\python.exe cli.py review --base upstream/main
@@ -105,12 +107,12 @@ GitPulse writes `PULL_REQUEST_REVIEW.md` in this directory. The file is ignored 
 
 To review another target, choose one option:
 
-| Target | Command option |
-| --- | --- |
-| Current checkout | No extra option; head defaults to `HEAD`. |
-| Any local branch, tag, or commit | `--head-ref origin/feature/topic` or `--head-ref <commit-sha>` |
-| GitHub pull request | `--pr-number 42 --remote upstream` |
-| Staged and unstaged tracked edits on current `HEAD` | `--include-worktree` |
+| Target                                                | Command option                                                     |
+| ----------------------------------------------------- | ------------------------------------------------------------------ |
+| Current checkout                                      | No extra option; head defaults to `HEAD`.                        |
+| Any local branch, tag, or commit                      | `--head-ref origin/feature/topic` or `--head-ref <commit-sha>` |
+| GitHub pull request                                   | `--pr-number 42 --remote upstream`                               |
+| Staged and unstaged tracked edits on current `HEAD` | `--include-worktree`                                             |
 
 Remote branches must be fetched before using `--head-ref`. PR mode fetches `refs/pull/<number>/head` into a private ref without checking out the PR. Other forges can be reviewed by fetching their source branch and passing it with `--head-ref`.
 
@@ -128,11 +130,13 @@ Gitleaks findings or failure skip model review by default. Reports are written t
 ## Example Input & Output
 
 ### Example Input
+
 ```
 Review the changes in my current branch relative to `upstream/main`.
 ```
 
 ### Example Output
+
 ```markdown
 # GitPulse Pull Request Review
 
@@ -150,6 +154,7 @@ Review the changes in my current branch relative to `upstream/main`.
 ```
 
 This sample was produced by a local Gemma 3 4B smoke run; model wording can vary.
+
 ```
 
 ---
