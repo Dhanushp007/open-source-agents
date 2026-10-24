@@ -46,4 +46,4 @@ agents/<project-slug>/
 
 | Agent Directory | Description | Framework / Stack | Contributor |
 | :--- | :--- | :--- | :--- |
-| *(None yet)* | *Contributions will appear here once approved and merged.* | — | — |
+| [`gitpulse`](gitpulse/) | Branch/commit/GitHub PR review with heuristic/Gitleaks secret scans, Ruff/commit linting, and optional Gemma summaries. | Python, Google ADK, Gemma, Gitleaks, Ruff | Dhanushp007 |
